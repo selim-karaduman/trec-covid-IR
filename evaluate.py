@@ -16,12 +16,17 @@ class Topic:
             ).format(self.number, self.query, self.question, self.narrative)
 
 
-def load_topics():
+def load_topics(retrieve="all"):
     tree = ET.parse("topics-rnd5.xml")
     root = tree.getroot()
     topics = dict()
     for topic in root:
         t_id = topic.get("number")
+        if (retrieve == "even") and (int(t_id) % 2 != 0):
+            continue
+        elif (retrieve == "odd") and (int(t_id) % 2 == 0):
+                continue
+
         kwargs = dict()
         kwargs["number"] = t_id
         for c in topic:
@@ -49,13 +54,32 @@ def eval_topics(topics, trec_ir):
     return evals
 
 if __name__ == '__main__':
-    trec_ir = CosineSimilarityBaseline(fname="assets/cosine_similarity", 
-                                        load=True)
-    topics = load_topics()
-    lines  = eval_topics(topics, trec_ir)
-    output = ("\n".join(lines))
-    with open("results/run.txt", "w") as f:
-        f.write(output)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--alg', choices=['random', 'cosine'], 
+                            required=True)
+    parser.add_argument('--operation', choices=['eval', 'calculate'], 
+                            required=True)
+    parser.add_argument('--filename', default="assets/cos_full")
+    args = parser.parse_args()
+    
+    if args.alg == "cosine":
+        trec_ir = CosineSimilarityBaseline()
+        if args.operation == "eval":
+            topics = load_topics(retrieve="even")
+            trec_ir.load(args.filename)
+            evals = eval_topics(topics, trec_ir)
+            output = ("\n".join(evals))
+            with open("results/run.txt", "w") as f:
+                f.write(output)
+        elif args.operation == "calculate":
+            import pandas as pd
+            data = pd.read_csv("metadata.csv")
+            trec_ir.extract_stats_to_file(data, args.filename)
+    else:
+        raise ValueError
+    
+    
     
     
 

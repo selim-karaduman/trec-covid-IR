@@ -1,7 +1,9 @@
 import numpy as np
+import re
 import random
 import scipy
 from sortedcontainers import SortedList
+from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import cosine_similarity
 from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
@@ -10,25 +12,25 @@ from nltk.tokenize import word_tokenize
 from document import Document
 import pickle
 
+PUNCS = "!\"#$%&()*+,-./:;<=>?@[\\]^_{|}~"
+PUNCS_RE = re.compile("([{}])".format(PUNCS), re.IGNORECASE | re.DOTALL)
+STOPWORDS_SET = set(stopwords.words('english'))
+THRESHOLD_MIN_TOKEN = 1
 
-
+"""
+To extract statistics etc. initially run:
+    b = CosineSimilarityBaseline()
+    b.extract_stats_to_file(corpus, outfname)
+To load existing statistics:
+    b = CosineSimilarityBaseline()
+    b.load(fname)
+"""
 class CosineSimilarityBaseline:
-    def __init__(self, corpus=None, process_type="stem", 
-                    fname="cosine_similarity", load=False):
-        if load:
-            self.load(fname)
-            return None
-        self.corpus = corpus
-        self.process_type = process_type
-        if process_type == "stem":
-            self.porter = PorterStemmer()
-            self.proc_token = lambda x: self.porter.stem(x)
-        elif process_type == "lemmatize":
-            self.lemmatizer = WordNetLemmatizer()
-            self.proc_token = lambda x: self.lemmatizer.lemmatize(x)
-        else:
-            raise ValueError
-        self.process_corpus_()
+    def __init__(self):
+        self.porter = PorterStemmer()
+        
+    def extract_stats_to_file(self, corpus, fname):
+        self.process_corpus(corpus)
         self.save(fname)
 
     def save(self, fname):
@@ -42,147 +44,113 @@ class CosineSimilarityBaseline:
             t = pickle.load(f)
         (self.idf, self.posting_list, self.tf_idf, 
             self.doc_ids, self.word2id) = t
-        self.porter = PorterStemmer()
-        self.proc_token = lambda x: self.porter.stem(x)
+        
   
     def get_ranked_docs(self, query):
-        # todo: stopword elim to speed up
-        tokenized_text = self.tokenize_(query)
-        tokenized_text = [w for w in tokenized_text 
-                            if not w in stopwords.words()]
-        tokenized_text = self.process_(tokenized_text)
-        query_doc = Document(tokenized_text, self.word2id)
-        # query_doc = self.process_text_(query)
+        # this assumes that no mutual documents in the self.doc_ids
+        tokenized_text = self.process_text(query)
+        query_doc = Document(tokenized_text)
+        query_doc.cache_tf_vector(self.word2id)
         
-        # idf: shape: (V, 1)
-        # doc_tf: (1, V)
-        # q_tf_idf: (V, 1)
-        q_tf_idf = self.idf.multiply(query_doc.tf_vec.T)
-        ranked_docs = SortedList(key=lambda x: -x[0])
-        doc_ids = set.union(*[self.posting_list.get(word, set())
-                                  for word in query_doc.tokens])
-        """
-        for i, doc_id in enumerate(doc_ids):
-            doc_cordid = self.doc_ids[doc_id]
-            doc_tf_idf = self.tf_idf[doc_id]
-            sim = cosine_similarity(q_tf_idf.T, doc_tf_idf)
-            ranked_docs.add((sim[0, 0], doc_cordid))
-            if i % 100 == 0:
-                print("{}/{}; {} %".format(i, len(doc_ids), 
-                                            i/len(doc_ids)*100
-                                            ), flush=True)
-        """
-        sim_matrix = cosine_similarity(q_tf_idf.T, self.tf_idf)
-        # (1, N)
-        #doc_ids = np.argpartition(sim_matrix, -1000)[0, -1000:]
-        doc_ids = (-sim_matrix).argsort()[0, :2000]
-        doc_set = set()
+        # idf: shape: (V, V)
+        # query_doc.tf_vec: (1, V)
+        # q_tf_idf: (1, V)
+        q_tf_idf = query_doc.tf_vec * self.idf
+        cand_doc_ids = np.array(list
+                                    (set.union(
+                                        *[self.posting_list.get(word, set())
+                                            for word in tokenized_text])
+                                    )
+                                )
+        sim_matrix = cosine_similarity(self.tf_idf, q_tf_idf)[:, 0]
+        doc_ids = (-sim_matrix).argsort()
         ranked_docs = []
         for doc_id in doc_ids:
-            doc_cordid = self.doc_ids[doc_id]
-            if len(doc_set) == 1000:
-                break
-            if doc_cordid not in doc_set:
-                ranked_docs.append((sim_matrix[0, doc_id], doc_cordid))
-                doc_set.add(doc_cordid)
-        
+            doc_corduid = self.doc_ids[doc_id]
+            ranked_docs.append((sim_matrix[doc_id], doc_corduid))
         return ranked_docs
     
-    def tokenize_(self, text):
-        return [word for word in word_tokenize(text) 
-                      if word.isalnum()]
-    
-    def process_(self, tokens):
-        return [self.porter.stem(t) for t in tokens]
-        # return [self.proc_token(t) for t in tokens]
+    def process_text(self, text):
+        text = text.replace("-\n", " ")
+        text = PUNCS_RE.sub(" ", text)
+        text = text.lower()
+        tokens = [word for word in word_tokenize(text) 
+                      if (word.isalpha() and len(word) > 1)]
+        tokens = [w for w in tokens if not w in STOPWORDS_SET]
+        tokens = [self.porter.stem(t) for t in tokens]
+        return tokens
         
-    def process_text_(self, text):
-        tokenized_text = self.tokenize_(text)
-        tokenized_text = self.process_(tokenized_text)
-        return Document(tokenized_text, self.word2id)
-        
-    def process_corpus_(self):
-        self.docs = []
+    def process_corpus(self, corpus):
+        docs = []
+        idf = []
+        cord_uids = set()
         self.doc_ids = []
-        N = len(self.corpus)
-        # 1 for UNK
-        self.idf = dict({0: 1})
         self.word2id = dict()
-        self.id2word = dict()
-        self.cord2id = dict()
-        self.id2cord = dict()
         self.posting_list = dict()
         # posting_list: key: string, value: set
-        word_index = 1
+        word_index = 0
         doc_index = 0
-        for i in range(N):
-            cord_uid = self.corpus["cord_uid"][i]
-            title = self.corpus["title"][i]
-            abstract = self.corpus["abstract"][i]
-            if type(title).__name__=="float":
-                title = ""
-            if type(abstract).__name__ == "float":
-                abstract = ""
+        for i in range(len(corpus)):
+            cord_uid = corpus["cord_uid"][i]
+            if cord_uid in cord_uids:
+                continue
+            title = corpus["title"][i]
+            title = "" if (not isinstance(title, str)) else title
+            abstract = corpus["abstract"][i]
+            abstract = "" if (not isinstance(abstract, str)) else abstract
             text= title + " " + abstract
-            tokenized_text = self.tokenize_(text)
-            tokenized_text = self.process_(tokenized_text)
+            tokenized_text = self.process_text(text)
+            # if the document is very short, skip it
+            if len(tokenized_text) < THRESHOLD_MIN_TOKEN:
+                continue
+            doc = Document(tokenized_text)
             for word in tokenized_text:
                 # add word to dictionary
                 if word not in self.word2id:
                     self.word2id[word] = word_index
-                    self.id2word[word_index] = word
+                    idf.append(0)
                     word_index += 1
                 # add doc to posting_list
                 if word not in self.posting_list:
                     self.posting_list[word] = set()
-                self.posting_list[word].add(doc_index)
-                
-            if cord_uid not in self.cord2id:
-                self.cord2id[cord_uid] = doc_index
-                self.id2cord[doc_index] = cord_uid
-                doc_index += 1
-                
-            doc = Document(tokenized_text, word2id=None, 
-                           doc_id=self.cord2id[cord_uid], 
-                           cord_uid=cord_uid, title=title, 
-                           abstract=abstract)
-            self.docs.append(doc)
-            self.doc_ids.append(doc.cord_uid)
-            for word, tf in doc.tf_dict.items():
+                self.posting_list[word].add(doc_index)     
+            docs.append(doc)
+            self.doc_ids.append(cord_uid)
+            cord_uids.add(cord_uid)
+            doc_index += 1
+            for word in doc.tf_dict.keys():
                 index = self.word2id[word]
-                if index not in self.idf: 
-                    self.idf[index] = 0
-                self.idf[index] += 1
-
+                idf[index] += 1
             if i % 100 == 0:
-                print("{} / {}; {} %".format(i, N, i/N*100))
-        
+                print("{} / {}; {:.2f} %".format(i, len(corpus), 
+                                                    i / len(corpus) * 100)) 
         print("Processed files. Now getting tf-idf statistics")
-        # idf: (V, 1);
-        for i, doc in enumerate(self.docs):
-            doc.tf_vec = doc.get_tf_vector_(self.word2id)
+        V = len(idf)
+        N = len(docs)
+        for i, doc in enumerate(docs):
+            doc.cache_tf_vector(self.word2id)
             if i % 100 == 0:
-                print("{} / {}; {} %".format(i, N, i/N*100))
-        self.idf = np.array(list(zip(*sorted(self.idf.items())))[1])
-        self.idf = scipy.sparse.csr_matrix(np.log10(N/self.idf)).T
-        # tf: (N, V)
-        self.doc_tf = scipy\
-                        .sparse.vstack([doc.tf_vec for doc in self.docs])
+                print("{} / {}; {:.2f} %".format(i, N, i / N * 100))
+        idf = np.array(idf) + 1
+        idf = np.log((N + 1) / idf) + 1
+        # idf: (V,);
+        self.idf = scipy.sparse.diags(idf, format='csr')
+        doc_tf = scipy.sparse.vstack([doc.tf_vec for doc in docs])
+        # doc_tf: (N, V)
         # tf_idf: (N, V)
-        self.tf_idf = (self.idf.multiply(self.doc_tf.T)).T
-
+        self.tf_idf = doc_tf * self.idf
+        # normalize tf_df
+        normalize(self.tf_idf, norm='l2', axis=1, copy=False)
 
 
 class RandomBaseline:
     def __init__(self, corpus):
-        self.docs = []
+        self.docs_ids = []
         for i in range(len(corpus)):
             cord_uid = corpus["cord_uid"][i]
-            doc = Document([], word2id=None, 
-                           doc_id=0, 
-                           cord_uid=cord_uid)
-            self.docs.append(doc)
+            self.docs_ids.append(cord_uid)
 
     def get_ranked_docs(self, query):
-        docs = random.sample(self.docs, 1000)
-        return [(i, doc.cord_uid) for i, doc in enumerate(docs)]
+        docs = random.sample(self.docs_ids, 1000)
+        return [(i, cord_uid) for i, cord_uid in enumerate(docs)]
+
