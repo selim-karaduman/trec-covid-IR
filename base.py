@@ -2,7 +2,6 @@ import numpy as np
 import re
 import random
 import scipy
-from sortedcontainers import SortedList
 from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import cosine_similarity
 from nltk.stem import PorterStemmer
@@ -153,4 +152,5 @@ class RandomBaseline:
     def get_ranked_docs(self, query):
         docs = random.sample(self.docs_ids, 1000)
         return [(i, cord_uid) for i, cord_uid in enumerate(docs)]
+
 

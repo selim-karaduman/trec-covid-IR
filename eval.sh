@@ -9,48 +9,5 @@
 #   you have qrels file: qrels-covid_d5_j0.5-5.txt
 #       ../qrels-covid_d5_j0.5-5.txt
 fname=$1
-echo $fname
-
-# python evaluate.py
-
-# Check the output of run.txt.errlog manually
-perl ../check_sub.pl results/$fname
-
-../trec_eval/trec_eval -c -M1000 -m all_trec ../qrels-covid_d5_j0.5-5.txt results/$fname > scores/$fname
-# | egrep '(ndcg_cut_10 |recall_1000 )'
-
-
-
+../trec_eval/trec_eval ../qrels-covid_d5_j0.5-5.txt results/$fname -m all_trec > scores/$fname
 cat scores/$fname # | egrep  '(success_10 |ndcg |map| P_10)'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
