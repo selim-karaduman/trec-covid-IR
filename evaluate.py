@@ -45,7 +45,7 @@ def eval_topics(topics, trec_ir):
         for i, (score, doc) in enumerate(eval_tuples):
             # eval_tuples is sorted already
             rank = i+1
-            run_tag = "GROUP_NAME"
+            run_tag = "0"
             # rank is per topic: TODO check that
             line = "{} Q0 {} {} {} {}".format(t.number, doc, 
                                                 rank, score, run_tag)
