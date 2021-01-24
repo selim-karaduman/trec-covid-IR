@@ -18,13 +18,13 @@ THRESHOLD_MIN_TOKEN = 1
 
 """
 To extract statistics etc. initially run:
-    b = CosineSimilarityBaseline()
+    b = TfIdfBaseline()
     b.extract_stats_to_file(corpus, outfname)
 To load existing statistics:
-    b = CosineSimilarityBaseline()
+    b = TfIdfBaseline()
     b.load(fname)
 """
-class CosineSimilarityBaseline:
+class TfIdfBaseline:
     def __init__(self):
         self.porter = PorterStemmer()
         
@@ -43,31 +43,42 @@ class CosineSimilarityBaseline:
             t = pickle.load(f)
         (self.idf, self.posting_list, self.tf_idf, 
             self.doc_ids, self.word2id) = t
-        
   
-    def get_ranked_docs(self, query):
+    def get_ranked_docs(self, query, k=-1):
         # this assumes that no mutual documents in the self.doc_ids
+        """
+        returns np.array of shape (N,)
+        k: number of retrievals: k=-1 returns all
+        """
         tokenized_text = self.process_text(query)
         query_doc = Document(tokenized_text)
         query_doc.cache_tf_vector(self.word2id)
-        
         # idf: shape: (V, V)
         # query_doc.tf_vec: (1, V)
         # q_tf_idf: (1, V)
         q_tf_idf = query_doc.tf_vec * self.idf
-        cand_doc_ids = np.array(list
-                                    (set.union(
-                                        *[self.posting_list.get(word, set())
-                                            for word in tokenized_text])
-                                    )
-                                )
-        sim_matrix = cosine_similarity(self.tf_idf, q_tf_idf)[:, 0]
-        doc_ids = (-sim_matrix).argsort()
-        ranked_docs = []
-        for doc_id in doc_ids:
-            doc_corduid = self.doc_ids[doc_id]
-            ranked_docs.append((sim_matrix[doc_id], doc_corduid))
-        return ranked_docs
+        if k == -1:
+            sim_matrix = cosine_similarity(self.tf_idf, q_tf_idf)[:, 0]
+            doc_ids = (-sim_matrix).argsort()
+            ranked_docs = []
+            for doc_id in doc_ids:
+                doc_corduid = self.doc_ids[doc_id]
+                ranked_docs.append([sim_matrix[doc_id], doc_corduid])
+            return ranked_docs
+        else:
+            cand_doc_ids = np.array(list
+                            (set.union(
+                                *[self.posting_list.get(word, set())
+                                    for word in tokenized_text])
+                            )
+                        )
+            sim_id2doc_id = {i:d_id for i, d_id in enumerate(cand_doc_ids)}
+            sim_matrix = cosine_similarity(self.tf_idf[cand_doc_ids,:], 
+                                            q_tf_idf)[:, 0]
+            for doc_id in doc_ids:
+                doc_corduid = self.doc_ids[sim_id2doc_id[doc_id]]
+                ranked_docs.append([sim_matrix[doc_id], doc_corduid])
+            return ranked_docs
     
     def process_text(self, text):
         text = text.replace("-\n", " ")
