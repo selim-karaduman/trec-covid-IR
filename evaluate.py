@@ -105,6 +105,7 @@ if __name__ == '__main__':
     parser.add_argument('--operation', choices=['eval', 'calculate'], 
                             required=True)
     parser.add_argument('--filename', required=True)
+    parser.add_argument('--bert-base-alg')
     args = parser.parse_args()
     
     if args.alg == "tfidf":
@@ -124,8 +125,15 @@ if __name__ == '__main__':
         elif args.operation == "calculate":
             trec_ir.extract_stats_to_file(args.filename)
     elif args.alg == "bert":
-        base = TfIdfBaseline()
-        base.load("assets/tfidg")
+        if args.bert_base_alg == "tfidf":    
+            base = TfIdfBaseline()
+            base.load("assets/tfidf")
+        elif args.bert_base_alg == "bm25":
+            base = BM25Baseline()
+            base.load("assets/bm25")
+        else:
+            print("With bert use one of < tfidf, bm25 > with --bert-base-alg")
+            raise ValueError
         trec_ir = BertRanker(base)
         if args.operation == "eval":
             gen_runfile(trec_ir, args.filename)

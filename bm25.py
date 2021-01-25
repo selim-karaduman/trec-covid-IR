@@ -44,6 +44,8 @@ class BM25Baseline(Base):
         #query_doc.cache_bm25_vector(self.word2id, self.b, self.k, self.d_avg)
         q_tf = query_doc.get_tf_vec(self.word2id) # (1, V)
         q_bm = q_tf * self.bm25_matrix.T
+        # divide by max to get 0-1 range
+        q_bm = q_bm/q_bm.max()
         return q_bm, None
 
     ##def get_sim_matrix(self, query, k):
@@ -63,5 +65,4 @@ class BM25Baseline(Base):
         self.idf = scipy.sparse.diags(idf, format='csr')
         doc_bm = scipy.sparse.vstack([doc.bm_vec for doc in docs])
         self.bm25_matrix = doc_bm * self.idf
-        normalize(self.bm25_matrix, norm='l2', axis=1, copy=False)
 

@@ -29,12 +29,11 @@ def grid_search_bert(trec_ir, fname):
                 query = queries[t.number]
                 if query not in sim_matrices:
                     bert_sim_matrix, sim_id2doc_id = trec_ir.get_sim_matrix(query, k)
-                    base_q = super(type(trec_ir), trec_ir).encode_query(query)
-                    base_sim_matrix, _ = super(type(trec_ir), trec_ir).calculate_sim_matrix(trec_ir.tf_idf, base_q, k)
+                    base_sim_matrix, _ = trec_ir.base.get_sim_matrix(query, k)
                     sim_matrices[query] = (bert_sim_matrix, base_sim_matrix)
                 bert_sim_matrix, base_sim_matrix = sim_matrices[query]
                 sim_matrix = alpha * bert_sim_matrix + (1 - alpha) * base_sim_matrix
-                eval_tuples = trec_ir.get_sorted_docs(sim_matrix, sim_id2doc_id, k)
+                eval_tuples = trec_ir.base.get_sorted_docs(sim_matrix, sim_id2doc_id, k)
                 for i, (score, doc) in enumerate(eval_tuples):
                     # eval_tuples is sorted already
                     rank = i+1
@@ -58,7 +57,11 @@ def grid_search_bert(trec_ir, fname):
 
 
 if __name__ == '__main__':
-    trec_ir = BertRanker("assets/tfidf")
+    ## base = TfIdfBaseline()
+    ## base.load("assets/tfidf")
+    base = BM25Baseline()
+    base.load("assets/bm25")
+    trec_ir = BertRanker(base)
     best_x = grid_search_bert(trec_ir, "assets/bertnotclean")
     print("Best found parameter is: {}".format(best_x))
 
