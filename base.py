@@ -85,6 +85,7 @@ class Base(ABC):
         self.doc_ids = []
         self.word2id = dict()
         self.posting_list = dict()
+        self.d_avg = 0
         # posting_list: key: string, value: set
         word_index = 0
         doc_index = 0
@@ -102,6 +103,7 @@ class Base(ABC):
             if len(tokenized_text) < THRESHOLD_MIN_TOKEN:
                 continue
             doc = Document(tokenized_text)
+            self.d_avg += len(tokenized_text)
             for word in tokenized_text:
                 # add word to dictionary
                 if word not in self.word2id:
@@ -122,6 +124,7 @@ class Base(ABC):
             if i % 100 == 0:
                 print("{} / {}; {:.2f} %".format(i, len(corpus), 
                                                     i / len(corpus) * 100))
+        self.d_avg /= len(self.doc_ids)
         return idf, docs
 
 

@@ -1,31 +1,29 @@
 from sentence_transformers import SentenceTransformer
 from base import *
 from joblib import dump, load
-from tfidf import *
 
 """
 This assumes a baseline has been trained:
-    if not train either svd or tf-idf model e.g. for tf-idf:
+    if not train tf-idf model e.g. for tf-idf or any other baseline:
         b = TfIdfBaseline()
         b.extract_stats_to_file(corpus, cosfname)
 
 Extract the embedding over the complete corpus once, to do this run:
-l = BertRanker(fname_base)
+l = BertRanker(b)
 l.extract_stats_to_file(fname)
 
 # then to use this to extract documents:
 To load existing statistics:
-    l = BertRanker(fname_base)
+    l = BertRanker(b)
     l.load(fname)
     l.get_ranked_documents(query, alpha)
 
 """
-class BertRanker(TfIdfBaseline):
+class BertRanker(Base):
 
-    def __init__(self, fname_base, alpha=0.2):
+    def __init__(self, base, alpha=0.2):
         super().__init__()
-        print("Loading baseline...")
-        super().load(fname_base)
+        self.base = base
         self.model = SentenceTransformer("./models/covidbert-nli")
         self.alpha = alpha
 
@@ -56,8 +54,7 @@ class BertRanker(TfIdfBaseline):
         """
         alpha = self.alpha
         bert_sim_matrix, sim_id2doc_id = self.get_sim_matrix(query, k)
-        base_q = super().encode_query(query)
-        base_sim_matrix, _ = super().calculate_sim_matrix(self.tf_idf, base_q, k)
+        base_sim_matrix, _ = self.base.get_sim_matrix(query, k)
         sim_matrix = alpha * bert_sim_matrix + (1 - alpha) * base_sim_matrix
         return self.get_sorted_docs(sim_matrix, sim_id2doc_id, k)
     
@@ -82,7 +79,7 @@ class BertRanker(TfIdfBaseline):
         cord_dict = {d_id: i for i, d_id in enumerate(self.doc_ids)}
         corpus_d = set()
         doc_texts = [None]*len(self.doc_ids)
-        print("Distilling articles")
+        print("Processing articles")
         for i in range(len(corpus)):
             if ((corpus["cord_uid"][i] in cord_dict) and 
                     (corpus["cord_uid"][i] not in corpus_d)):
@@ -100,8 +97,6 @@ class BertRanker(TfIdfBaseline):
             if i % 1000 == 0:
                 print("{}/{} ; {:.2f} %".format(i, len(corpus),
                                                      i/len(corpus)*100))
-
-        
         print("Calculating embeddings")
         embeddings = self.model.encode(doc_texts, show_progress_bar=True)
         self.doc_embeddings = np.stack(embeddings)
@@ -115,5 +110,3 @@ class BertRanker(TfIdfBaseline):
         embeddings = self.model.encode(queries, show_progress_bar=True)
         for i in range(len(queries)):
             self.query_embeddings[queries[i]] = embeddings[i]
-
-

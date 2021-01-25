@@ -40,7 +40,7 @@ class SvdBaseline(TfIdfBaseline):
         self.svd, self.doc_mat = load(fname)
 
     def get_ranked_docs(self, query, k=-1):
-        sim_matrix, sim_id2doc_id = self.get_sim_matrix(q_v, k)
+        sim_matrix, sim_id2doc_id = self.get_sim_matrix(query, k)
         return self.get_sorted_docs(sim_matrix, sim_id2doc_id, k)
 
     def encode_query(self, query):

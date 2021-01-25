@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 from tfidf import TfIdfBaseline
 from svd import SvdBaseline
 from bert import BertRanker
+from bm25 import BM25Baseline
 
 class Topic:
     def __init__(self, number, query, question, narrative):
@@ -79,17 +80,27 @@ def get_map_from_runfile():
     res = {l.split("\t")[0]: float(l.split("\t")[2]) 
                 for l in data.split("\n") if l}
     map_score = res["map"]
-    ## p10 = res["P_10"]
-    ## ndcg = res["ndcg"]
-    ## success_10 = res["success_10"]
     return map_score
 
-
+def get_relevant_scores():
+    import subprocess
+    a = subprocess.run(["bash", "eval.sh", "run.txt"], stdout=subprocess.PIPE)
+    data = a.stdout.decode("utf-8").replace(" ", "")
+    res = {l.split("\t")[0]: float(l.split("\t")[2]) 
+                for l in data.split("\n") if l}
+    map_score = res["map"]
+    p10 = res["P_10"]
+    ndcg = res["ndcg"]
+    success_10 = res["success_10"]
+    print("MAP: {}\nP_10: {}\nNDCG: {}\nsuccess_10: {}"\
+            .format(map_score, p10, ndcg, success_10))
+    return (map_score, p10, ndcg, success_10)
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--alg', choices=['random', 'tfidf', 'svd', 'bert'], 
+    parser.add_argument('--alg', choices=['random', 'tfidf', 
+                                            'svd', 'bert', 'bm25'], 
                             required=True)
     parser.add_argument('--operation', choices=['eval', 'calculate'], 
                             required=True)
@@ -100,6 +111,7 @@ if __name__ == '__main__':
         trec_ir = TfIdfBaseline()
         if args.operation == "eval":
             gen_runfile(trec_ir, args.filename)
+            get_relevant_scores()
         elif args.operation == "calculate":
             import pandas as pd
             data = pd.read_csv("metadata.csv")
@@ -108,18 +120,31 @@ if __name__ == '__main__':
         trec_ir = SvdBaseline("assets/sublinear_tfidf")
         if args.operation == "eval":
             gen_runfile(trec_ir, args.filename)
+            get_relevant_scores()
         elif args.operation == "calculate":
             trec_ir.extract_stats_to_file(args.filename)
     elif args.alg == "bert":
-        trec_ir = BertRanker("assets/tfidf")
+        base = TfIdfBaseline()
+        base.load("assets/tfidg")
+        trec_ir = BertRanker(base)
         if args.operation == "eval":
             gen_runfile(trec_ir, args.filename)
+            get_relevant_scores()
         elif args.operation == "calculate":
             import pandas as pd
             data = pd.read_csv("metadata.csv")
             topics = load_topics()
             queries = get_queries_from_topics(topics)
             trec_ir.extract_stats_to_file(data, queries, args.filename)
+    elif args.alg == "bm25":
+        trec_ir = BM25Baseline(b=0.75, k=1.5)
+        if args.operation == "eval":
+            gen_runfile(trec_ir, args.filename)
+            get_relevant_scores()
+        elif args.operation == "calculate":
+            import pandas as pd
+            data = pd.read_csv("metadata.csv")
+            trec_ir.extract_stats_to_file(data, args.filename)    
     else:
         raise ValueError
     

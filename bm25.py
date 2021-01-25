@@ -5,17 +5,12 @@ import pickle
 from base import Base
 from sklearn.preprocessing import normalize
 
-"""
-To extract statistics etc. initially run:
-    b = TfIdfBaseline()
-    b.extract_stats_to_file(corpus, outfname)
-To load existing statistics:
-    b = TfIdfBaseline()
-    b.load(fname)
-"""
-class TfIdfBaseline(Base):
-    def __init__(self):
+
+class BM25Baseline(Base):
+    def __init__(self, b=0.75, k=1.5):
         super().__init__()
+        self.b = b
+        self.k = k
         
     def extract_stats_to_file(self, corpus, fname):
         self.process_corpus(corpus)
@@ -23,16 +18,16 @@ class TfIdfBaseline(Base):
 
     def save(self, fname):
         print("Calculations are done, saving to disk")
-        t = (self.idf, self.posting_list, self.tf_idf, 
-                self.doc_ids, self.word2id)
+        t = (self.idf, self.posting_list, self.bm25_matrix, 
+                self.doc_ids, self.word2id, self.d_avg, self.b, self.k)
         with open(fname, "wb") as f:
             pickle.dump(t, f)
 
     def load(self, fname):
         with open(fname, "rb") as f:
             t = pickle.load(f)
-        (self.idf, self.posting_list, self.tf_idf, 
-            self.doc_ids, self.word2id) = t
+        (self.idf, self.posting_list, self.bm25_matrix, 
+            self.doc_ids, self.word2id, self.d_avg, self.b, self.k) = t
   
     def get_ranked_docs(self, query, k=-1):
         """
@@ -43,33 +38,30 @@ class TfIdfBaseline(Base):
         sim_matrix, sim_id2doc_id = self.get_sim_matrix(query, k)
         return self.get_sorted_docs(sim_matrix, sim_id2doc_id, k)
 
-    def encode_query(self, query):
+    def get_sim_matrix(self, query, k):
         tokenized_text = self.process_text(query)
         query_doc = Document(tokenized_text)
-        query_doc.cache_tf_vector(self.word2id)
-        q_tf_idf = query_doc.tf_vec * self.idf
-        return q_tf_idf
+        #query_doc.cache_bm25_vector(self.word2id, self.b, self.k, self.d_avg)
+        q_tf = query_doc.get_tf_vec(self.word2id) # (1, V)
+        q_bm = q_tf * self.bm25_matrix.T
+        return q_bm, None
 
-    def get_sim_matrix(self, query, k):
-        q_v = self.encode_query(query)
-        return super().calculate_sim_matrix(self.tf_idf, q_v, k)
+    ##def get_sim_matrix(self, query, k):
+    ##    q_v = self.encode_query(query)
+    ##    return super().calculate_sim_matrix(self.bm25_matrix, q_v, k)
    
     def process_corpus(self, corpus):
         idf, docs = super().process_corpus(corpus)
-        print("Processed files. Now getting tf-idf statistics")
-        V = len(idf)
+        print("Processed files. Now getting bm25 statistics")
         N = len(docs)
         for i, doc in enumerate(docs):
-            doc.cache_tf_vector(self.word2id)
+            doc.cache_bm25_vector(self.word2id, self.b, self.k, self.d_avg)
             if i % 100 == 0:
                 print("{} / {}; {:.2f} %".format(i, N, i / N * 100))
-        idf = np.array(idf) + 1
-        idf = np.log((N + 1) / idf) + 1
-        # idf: (V,);
+        idf = np.array(idf)
+        idf = np.log(((N - idf + 0.5) / (idf + 0.5)) + 1)
         self.idf = scipy.sparse.diags(idf, format='csr')
-        doc_tf = scipy.sparse.vstack([doc.tf_vec for doc in docs])
-        # doc_tf: (N, V)
-        # tf_idf: (N, V)
-        self.tf_idf = doc_tf * self.idf
-        # normalize tf_df
-        normalize(self.tf_idf, norm='l2', axis=1, copy=False)
+        doc_bm = scipy.sparse.vstack([doc.bm_vec for doc in docs])
+        self.bm25_matrix = doc_bm * self.idf
+        normalize(self.bm25_matrix, norm='l2', axis=1, copy=False)
+
