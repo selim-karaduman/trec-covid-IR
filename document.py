@@ -13,7 +13,7 @@ class Document:
         for tok, count in self.tf_dict.items():
             if tok in word2id:
                 tf_vec[word2id[tok]] = count
-        #tf_vec[tf_vec>0] = np.log(tf_vec[tf_vec>0]) + 1
+        tf_vec[tf_vec>0] = np.log(tf_vec[tf_vec>0]) + 1
         tf_vec = scipy.sparse.csr_matrix(tf_vec)
         self.tf_vec = tf_vec
         return tf_vec

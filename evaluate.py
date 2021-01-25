@@ -1,5 +1,8 @@
 import xml.etree.ElementTree as ET
-from base import CosineSimilarityBaseline
+from base import TfIdfBaseline
+from svd import SvdBaseline
+from bert import BertRanker
+
 class Topic:
     def __init__(self, number, query, question, narrative):
         self.number = number
@@ -53,18 +56,25 @@ def eval_topics(topics, trec_ir):
         print("{} / {}".format(step, len(topics)))
     return evals
 
+def get_queries_from_topics(topics):
+    queries = []
+    for _, t in topics.items():
+        q = " ".join([t.query, t.question, t.narrative])
+        queries.append(q)
+    return queries
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--alg', choices=['random', 'cosine'], 
+    parser.add_argument('--alg', choices=['random', 'tfidf', 'svd', 'bert'], 
                             required=True)
     parser.add_argument('--operation', choices=['eval', 'calculate'], 
                             required=True)
-    parser.add_argument('--filename', default="assets/cos_full")
+    parser.add_argument('--filename', required=True)
     args = parser.parse_args()
     
-    if args.alg == "cosine":
-        trec_ir = CosineSimilarityBaseline()
+    if args.alg == "tfidf":
+        trec_ir = TfIdfBaseline()
         if args.operation == "eval":
             topics = load_topics(retrieve="even")
             trec_ir.load(args.filename)
@@ -76,6 +86,32 @@ if __name__ == '__main__':
             import pandas as pd
             data = pd.read_csv("metadata.csv")
             trec_ir.extract_stats_to_file(data, args.filename)
+    elif args.alg == "svd":
+        trec_ir = SvdBaseline("assets/sublinear_tfidf")
+        if args.operation == "eval":
+            topics = load_topics(retrieve="even")
+            trec_ir.load(args.filename)
+            evals = eval_topics(topics, trec_ir)
+            output = ("\n".join(evals))
+            with open("results/run.txt", "w") as f:
+                f.write(output)
+        elif args.operation == "calculate":
+            trec_ir.extract_stats_to_file(args.filename)
+    elif args.alg == "bert":
+        trec_ir = BertRanker("assets/tfidf")
+        if args.operation == "eval":
+            topics = load_topics(retrieve="even")
+            trec_ir.load(args.filename)
+            evals = eval_topics(topics, trec_ir)
+            output = ("\n".join(evals))
+            with open("results/run.txt", "w") as f:
+                f.write(output)
+        elif args.operation == "calculate":
+            import pandas as pd
+            data = pd.read_csv("metadata.csv")
+            topics = load_topics()
+            queries = get_queries_from_topics(topics)
+            trec_ir.extract_stats_to_file(data, queries, args.filename)
     else:
         raise ValueError
     
