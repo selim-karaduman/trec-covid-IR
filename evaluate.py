@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-from base import TfIdfBaseline
+from tfidf import TfIdfBaseline
 from svd import SvdBaseline
 from bert import BertRanker
 
@@ -63,6 +63,31 @@ def get_queries_from_topics(topics):
         queries.append(q)
     return queries
 
+def gen_runfile(trec_ir, fname):
+    topics = load_topics(retrieve="even")
+    trec_ir.load(fname)
+    evals = eval_topics(topics, trec_ir)
+    output = ("\n".join(evals))
+    with open("results/run.txt", "w") as f:
+        f.write(output)
+
+def get_map_from_runfile(evals):
+    # runs trec_eval process
+    import subprocess
+    a = subprocess.run(["bash", "eval.sh", "run.txt"], stdout=subprocess.PIPE)
+    data = a.stdout.decode("utf-8").replace(" ", "")
+    res = {l.split("\t")[0]: float(l.split("\t")[2]) 
+                for l in data.split("\n") if l}
+    map_score = res["map"]
+    ## p10 = res["P_10"]
+    ## ndcg = res["ndcg"]
+    ## success_10 = res["success_10"]
+    return map_score
+
+def grid_search(fn):
+    # grid search for a parameter in range 0-1
+    
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
@@ -76,12 +101,7 @@ if __name__ == '__main__':
     if args.alg == "tfidf":
         trec_ir = TfIdfBaseline()
         if args.operation == "eval":
-            topics = load_topics(retrieve="even")
-            trec_ir.load(args.filename)
-            evals = eval_topics(topics, trec_ir)
-            output = ("\n".join(evals))
-            with open("results/run.txt", "w") as f:
-                f.write(output)
+            gen_runfile(trec_ir, args.filename)
         elif args.operation == "calculate":
             import pandas as pd
             data = pd.read_csv("metadata.csv")
@@ -89,29 +109,27 @@ if __name__ == '__main__':
     elif args.alg == "svd":
         trec_ir = SvdBaseline("assets/sublinear_tfidf")
         if args.operation == "eval":
-            topics = load_topics(retrieve="even")
-            trec_ir.load(args.filename)
-            evals = eval_topics(topics, trec_ir)
-            output = ("\n".join(evals))
-            with open("results/run.txt", "w") as f:
-                f.write(output)
+            gen_runfile(trec_ir, args.filename)
         elif args.operation == "calculate":
             trec_ir.extract_stats_to_file(args.filename)
     elif args.alg == "bert":
         trec_ir = BertRanker("assets/tfidf")
         if args.operation == "eval":
-            topics = load_topics(retrieve="even")
-            trec_ir.load(args.filename)
-            evals = eval_topics(topics, trec_ir)
-            output = ("\n".join(evals))
-            with open("results/run.txt", "w") as f:
-                f.write(output)
+            gen_runfile(trec_ir, args.filename)
         elif args.operation == "calculate":
             import pandas as pd
             data = pd.read_csv("metadata.csv")
             topics = load_topics()
             queries = get_queries_from_topics(topics)
             trec_ir.extract_stats_to_file(data, queries, args.filename)
+    elif args.alg == "grid_search_bert":
+        trec_ir = BertRanker("assets/tfidf")
+        def objective(x): 
+            trec_ir.alpha = x
+            return get_map_from_runfile(gen_runfile(trec_ir))
+        best_x = grid_search(objective)
+        print("Best found parameter is: {}".format(best_x))
+
     else:
         raise ValueError
     

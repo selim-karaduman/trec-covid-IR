@@ -1,6 +1,7 @@
 from sentence_transformers import SentenceTransformer
 from base import *
 from joblib import dump, load
+from tfidf import *
 
 """
 This assumes a baseline has been trained:
@@ -21,18 +22,17 @@ To load existing statistics:
 """
 class BertRanker(TfIdfBaseline):
 
-    def __init__(self, fname_base):
+    def __init__(self, fname_base, alpha=0.2):
         super().__init__()
         print("Loading baseline...")
         super().load(fname_base)
         self.model = SentenceTransformer("./models/covidbert-nli")
+        self.alpha = alpha
 
     def extract_stats_to_file(self, corpus, queries, fname):
-
         self.process_queries(queries, False)
         self.process_corpus(corpus, False)
         self.save(fname + "notclean")
-
         self.process_queries(queries, True)
         self.process_corpus(corpus, True)
         self.save(fname + "clean")
@@ -48,33 +48,32 @@ class BertRanker(TfIdfBaseline):
         self.query_embeddings, self.doc_embeddings = load(fname)
         
 
-    def get_ranked_docs(self, query, alpha=0.2, k=-1):
+    def get_ranked_docs(self, query, k=-1):
         """
         query: str
         alpha: int: interpolation parameter, final ranking is:
             base_score * (1-alpha) + bert_score * (alpha)
         """
+        alpha = self.alpha
+        bert_sim_matrix, sim_id2doc_id = self.get_sim_matrix(query, k)
+        base_q = super().encode_query(query)
+        base_sim_matrix, _ = super().calculate_sim_matrix(self.tf_idf, base_q, k)
+        sim_matrix = alpha * bert_sim_matrix + (1 - alpha) * base_sim_matrix
+        return self.get_sorted_docs(sim_matrix, sim_id2doc_id, k)
+    
+    def encode_query(self, query):
         if query in self.query_embeddings:
             query_embedding = self.query_embeddings[query]
         else:
             query = self.clean_string(query)
             query_embedding = self.model.encode([query])
         query_embedding = query_embedding.reshape(1, -1)
-        # query_embedding: (1, E)
-        # self.doc_embeddings: (N, E)
-        bert_sim_matrix = cosine_similarity(self.doc_embeddings,
-                                         query_embedding)[:, 0]
-        base_ranked_docs = super().get_ranked_docs(query, k=k)
-        cord_uid2id = {c_i:i for i, c_i in enumerate(self.doc_ids)}
+        return query_embedding
 
-        ranked_docs = []
-        for base_score, cord_uid in base_ranked_docs:
-            bert_score = bert_sim_matrix[cord_uid2id[cord_uid]]
-            final_score = (1-alpha)*base_score + alpha*bert_score
-            ranked_docs.append([final_score, cord_uid])
-        
-        return sorted(ranked_docs, key=lambda x: -x[0])
-
+    def get_sim_matrix(self, query, k):
+        q_v = self.encode_query(query)
+        return super().calculate_sim_matrix(self.doc_embeddings, q_v, k)
+    
     def clean_string(self, text):
         return " ".join(super().process_text(text))
 
