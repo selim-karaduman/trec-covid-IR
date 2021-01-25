@@ -71,7 +71,7 @@ def gen_runfile(trec_ir, fname):
     with open("results/run.txt", "w") as f:
         f.write(output)
 
-def get_map_from_runfile(evals):
+def get_map_from_runfile():
     # runs trec_eval process
     import subprocess
     a = subprocess.run(["bash", "eval.sh", "run.txt"], stdout=subprocess.PIPE)
@@ -84,9 +84,7 @@ def get_map_from_runfile(evals):
     ## success_10 = res["success_10"]
     return map_score
 
-def grid_search(fn):
-    # grid search for a parameter in range 0-1
-    
+
 
 if __name__ == '__main__':
     import argparse
@@ -122,14 +120,6 @@ if __name__ == '__main__':
             topics = load_topics()
             queries = get_queries_from_topics(topics)
             trec_ir.extract_stats_to_file(data, queries, args.filename)
-    elif args.alg == "grid_search_bert":
-        trec_ir = BertRanker("assets/tfidf")
-        def objective(x): 
-            trec_ir.alpha = x
-            return get_map_from_runfile(gen_runfile(trec_ir))
-        best_x = grid_search(objective)
-        print("Best found parameter is: {}".format(best_x))
-
     else:
         raise ValueError
     
