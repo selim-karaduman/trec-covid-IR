@@ -53,7 +53,8 @@ class SvdBaseline(TfIdfBaseline):
     def get_sim_vector(self, query, k):
         tokenized_text = self.process_text(query)
         q_v = self.encode_query(tokenized_text)
-        return super().calculate_sim_vector(self.doc_mat, q_v, k, tokenized_text)
+        return super().calculate_sim_vector(self.doc_mat, 
+                                                q_v, k, tokenized_text)
 
     def fit(self, n_iter, n):
         self.svd = TruncatedSVD(n_components=1000, random_state=0, n_iter=50)

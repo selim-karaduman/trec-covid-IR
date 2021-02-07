@@ -52,7 +52,8 @@ class TfIdfBaseline(Base):
     def get_sim_vector(self, query, k):
         tokenized_text = self.process_text(query)
         q_v = self.encode_query(tokenized_text)
-        return super().calculate_sim_vector(self.tf_idf, q_v, k, tokenized_text)
+        return super().calculate_sim_vector(self.tf_idf, 
+                                                q_v, k, tokenized_text)
    
     def process_corpus(self, corpus):
         idf, docs = super().process_corpus(corpus)

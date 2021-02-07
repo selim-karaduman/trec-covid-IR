@@ -78,7 +78,8 @@ class BertRanker(Base):
     def get_sim_vector(self, query, k):
         q_v = self.encode_query(query)
         tokenized_text = self.process_text(query)
-        return self.base.calculate_sim_vector(self.doc_embeddings, q_v, k, tokenized_text)
+        return self.base.calculate_sim_vector(self.doc_embeddings, 
+                                                q_v, k, tokenized_text)
     
     def clean_string(self, text):
         return " ".join(super().process_text(text))

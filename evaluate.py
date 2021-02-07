@@ -119,7 +119,7 @@ if __name__ == '__main__':
             data = pd.read_csv("metadata.csv")
             trec_ir.extract_stats_to_file(data, args.filename)
     elif args.alg == "svd":
-        trec_ir = SvdBaseline("assets/sublinear_tfidf")
+        trec_ir = SvdBaseline("assets/tfidf")
         if args.operation == "eval":
             gen_runfile(trec_ir, args.filename, args.k)
             get_relevant_scores()
