@@ -77,4 +77,4 @@ python evaluate.py --alg svd --operation eval  --filename "./assets/svd_1000"  -
 | **NDCG**      | 0.7824        | 0.7462        | 0.7004        | 0.7587        | 0.7855        |
 
 
-* The results are obtained for k==-1; which means: for each query program returns all documents sorted by their score. *Unlike* trec_coivd requirement ok k==1000.
+* The results are obtained for k==-1; which means: for each query program returns all documents sorted by their score. *Unlike* trec_covid requirement ok k==1000.
