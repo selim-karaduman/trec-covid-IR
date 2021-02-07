@@ -28,7 +28,7 @@ Trec Covid Info Retrieval
 
 ### Setup:
 ```bash
-mkdir assets models results 
+mkdir assets models results scores
 wget "https://ir.nist.gov/covidSubmit/data/topics-rnd5.xml"
 wget "https://ai2-semanticscholar-cord-19.s3-us-west-2.amazonaws.com/historical_releases/cord-19_2020-07-16.tar.gz"
 tar -xvf cord-19_2020-07-16.tar.gz
@@ -51,8 +51,9 @@ popd
 ### Fitting:
 ```bash
 # Keep the file names as they are, they are used in the code as well
-python evaluate.py --alg bm25 --operation calculate  --filename "./assets/bm25"
+# Order is important since one uses another as its baseline
 python evaluate.py --alg tfidf --operation calculate  --filename "./assets/tfidf"
+python evaluate.py --alg bm25 --operation calculate  --filename "./assets/bm25"
 python evaluate.py --alg svd --operation calculate  --filename "./assets/svd"
 python evaluate.py --alg bert --operation calculate  --filename "./assets/bert" --bert-base-alg bm25
 ```
@@ -80,3 +81,4 @@ python evaluate.py --alg svd --operation eval  --filename "./assets/svd_1000"  -
 
 
 * The results are obtained for k==-1; which means: for each query program returns all documents sorted by their score. *Unlike* trec_covid requirement ok k==1000.
+* Also, results are obtained using only the even numbered topics
