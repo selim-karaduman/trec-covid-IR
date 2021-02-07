@@ -28,7 +28,7 @@ Trec Covid Info Retrieval
 
 ### Setup:
 ```bash
-mkdir assets models results 
+mkdir assets models results scores
 wget "https://ir.nist.gov/covidSubmit/data/topics-rnd5.xml"
 wget "https://ai2-semanticscholar-cord-19.s3-us-west-2.amazonaws.com/historical_releases/cord-19_2020-07-16.tar.gz"
 tar -xvf cord-19_2020-07-16.tar.gz
