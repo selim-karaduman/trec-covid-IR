@@ -28,7 +28,7 @@ Trec Covid Info Retrieval
 
 ### Setup:
 ```bash
-mkdir assets models results scores
+mkdir assets models results 
 wget "https://ir.nist.gov/covidSubmit/data/topics-rnd5.xml"
 wget "https://ai2-semanticscholar-cord-19.s3-us-west-2.amazonaws.com/historical_releases/cord-19_2020-07-16.tar.gz"
 tar -xvf cord-19_2020-07-16.tar.gz
@@ -74,7 +74,7 @@ python evaluate.py --alg svd --operation eval  --filename "./assets/svd_1000"  -
 
 ### Results:
 | ....          | BM25          | TFIDF         | SVD           | BERT ON TFIDF | BERT ON BM25  |
-|:------------- |:------------- |:------------- |:------------- |:-------------:|:------------- |
+|:------------- |:------------- |:------------- |:------------- |:------------- |:------------- |
 | **MAP**       | 0.3485        | 0.2765        | 0.2219        | 0.2996        | 0.3547        |
 | **P_10**      | 0.8           | 0.6080        | 0.304         | 0.636         | 0.8           |
 | **NDCG**      | 0.7824        | 0.7462        | 0.7004        | 0.7587        | 0.7855        |
