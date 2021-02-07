@@ -55,7 +55,7 @@ def paired_test(trec_ir1, file1, retr1, name1, trec_ir2, file2, retr2, name2):
     print("Evaluation is done. Performing test...")
     t, p = stats.ttest_rel(maps1, maps2)
     print("t-statistics: {} ; p-value: {}".format(t, p))
-    if p > 0.05:
+    if p > 0.1:
         print("<{}> and <{}> have no significant difference".format(name1,
                                                                      name2))
     else:
@@ -69,52 +69,37 @@ def paired_test(trec_ir1, file1, retr1, name1, trec_ir2, file2, retr2, name2):
                                                                     name1))
 
 
-print("Paired test between tfidf odd-even sets")
-trec_ir1 = TfIdfBaseline()
-trec_ir2 = TfIdfBaseline()
-paired_test(trec_ir1, "assets/tfidf", "even", "tfidf even set", 
-                trec_ir2, "assets/tfidf", "odd", "tfidf odd set")
-print("*"*100)
-print("*"*100)
-# <even set> and <odd set> have no significant difference
-print("Paired test between bm25 odd-even sets")
-trec_ir1 = BM25Baseline(b=0.75, k=1.5)
-trec_ir2 = BM25Baseline(b=0.75, k=1.5)
-paired_test(trec_ir1, "assets/bm25", "even", "bm25 even set", 
-                trec_ir2, "assets/bm25", "odd", "bm25 odd set")
-print("*"*100)
-print("*"*100)
-
-print("Paired test between svd odd-even sets")
-trec_ir1 = SvdBaseline("assets/tfidf")
-trec_ir2 = SvdBaseline("assets/tfidf")
-paired_test(trec_ir1, "assets/svd_1000", "even", "svd even set", 
-                trec_ir2, "assets/svd_1000", "odd", "svd odd set")
-print("*"*100)
-print("*"*100)
-
-
-print("Paired test between bert on bm25 odd-even sets")
 base1 = BM25Baseline()
 base1.load("assets/bm25")
 trec_ir1 = BertRanker(base1)
-base2 = BM25Baseline()
-base2.load("assets/bm25")
-trec_ir2 = BertRanker(base2)
-paired_test(trec_ir1, "assets/bert", "even", "bert on bm25 even set", 
-                trec_ir2, "assets/bert", "odd", "bert on bm25 odd set")
+
+print("Paired test between tfidf")
+trec_ir2 = TfIdfBaseline()
+paired_test(trec_ir1, "assets/bert", "even", "bert on bm25",
+                trec_ir2, "assets/tfidf", "even", "tfidf")
+print("*"*100)
+print("*"*100)
+# <even set> and <odd set> have no significant difference
+print("Paired test between bm25")
+trec_ir2 = BM25Baseline(b=0.75, k=1.5)
+paired_test(trec_ir1, "assets/bert", "even", "bert on bm25", 
+                trec_ir2, "assets/bm25", "even", "bm25")
+print("*"*100)
+print("*"*100)
+
+print("Paired test between svd")
+trec_ir2 = SvdBaseline("assets/tfidf")
+paired_test(trec_ir1, "assets/bert", "even", "bert on bm25",
+                trec_ir2, "assets/svd_1000", "even", "svd")
 print("*"*100)
 print("*"*100)
 
 
-print("Paired test between bert on tfidf odd-even sets")
-base1 = TfIdfBaseline()
-base1.load("assets/tfidf")
-trec_ir1 = BertRanker(base1)
+print("Paired test between bert on tfidf")
 base2 = TfIdfBaseline()
 base2.load("assets/tfidf")
 trec_ir2 = BertRanker(base2)
-paired_test(trec_ir1, "assets/bert", "even", "bert on tfidf even set", 
-                trec_ir2, "assets/bert", "odd", "bert on tfidf odd set")
+paired_test(trec_ir1, "assets/bert", "even", "bert on bm25", 
+                trec_ir2, "assets/bert", "even", "bert on tfidf")
 print("*"*100)
 print("*"*100)

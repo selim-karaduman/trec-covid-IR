@@ -1,27 +1,24 @@
-Paired test between tfidf odd-even sets
+Paired test between tfidf
 Evaluation is done. Performing test...
-t-statistics: 1.2946533691578166 ; p-value: 0.20775778202894743
-<tfidf even set> and <tfidf odd set> have no significant difference
+t-statistics: 6.33178170678593 ; p-value: 1.5156561921032805e-06
+<bert on bm25> is significantly better than <tfidf>
 ****************************************************************************************************
 ****************************************************************************************************
-Paired test between bm25 odd-even sets
+Paired test between bm25
 Evaluation is done. Performing test...
-t-statistics: 0.7491192995438345 ; p-value: 0.4610651095999082
-<bm25 even set> and <bm25 odd set> have no significant difference
+t-statistics: 2.7874047597265865 ; p-value: 0.01022370710967116
+<bert on bm25> is significantly better than <bm25>
 ****************************************************************************************************
 ****************************************************************************************************
-Paired test between svd odd-even sets
+Paired test between svd
 Evaluation is done. Performing test...
-t-statistics: 0.9035565143340524 ; p-value: 0.37521095901744017
-<svd even set> and <svd odd set> have no significant difference
+t-statistics: 8.509486796874928 ; p-value: 1.0401253449344271e-08
+<bert on bm25> is significantly better than <svd>
 ****************************************************************************************************
-Paired test between bert on bm25 odd-even sets
-Evaluation is done. Performing test...
-t-statistics: 0.8555583238376337 ; p-value: 0.4007031745263666
-<bert on bm25 even set> and <bert on bm25 odd set> have no significant difference
 ****************************************************************************************************
-Paired test between bert on tfidf odd-even sets
+Paired test between bert on tfidf
 Evaluation is done. Performing test...
-t-statistics: 1.3607039285957623 ; p-value: 0.18624974728863739
-<bert on tfidf even set> and <bert on tfidf odd set> have no significant difference
+t-statistics: 4.786931058520862 ; p-value: 7.13885236111462e-05
+<bert on bm25> is significantly better than <bert on tfidf>
+****************************************************************************************************
 ****************************************************************************************************
