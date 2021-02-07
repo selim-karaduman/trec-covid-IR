@@ -64,8 +64,8 @@ def get_queries_from_topics(topics):
         queries.append(q)
     return queries
 
-def gen_runfile(trec_ir, fname, k):
-    topics = load_topics(retrieve="even")
+def gen_runfile(trec_ir, fname, k, retrieve="even"):
+    topics = load_topics(retrieve=retrieve)
     trec_ir.load(fname)
     evals = eval_topics(topics, trec_ir, k)
     output = ("\n".join(evals))
