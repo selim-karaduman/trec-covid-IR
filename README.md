@@ -21,6 +21,9 @@ Trec Covid Info Retrieval
 * numpy >= 1.17.2
 * scikit-learn >= 0.21.3 
 * sentence-transformers >= 0.4.1.2 
+* nltk >= 3.5
+* joblib >= 0.13.2
+* 
 * and the requirements for these packages
 
 ***
