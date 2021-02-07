@@ -28,16 +28,18 @@ Trec Covid Info Retrieval
 
 ### Setup:
 ```bash
-mkdir assets models results scores
+mkdir assets models results 
 wget "https://ir.nist.gov/covidSubmit/data/topics-rnd5.xml"
 wget "https://ai2-semanticscholar-cord-19.s3-us-west-2.amazonaws.com/historical_releases/cord-19_2020-07-16.tar.gz"
 tar -xvf cord-19_2020-07-16.tar.gz
 mv "2020-07-16/metadata.csv" .
 rm -rf cord-19_2020-07-16.tar.gz 2020-07-16/
 
-# install trec_eval
 pushd .
 cd ..
+# install relevance scores
+wget "https://ir.nist.gov/covidSubmit/data/qrels-covid_d5_j0.5-5.txt"
+# install trec_eval
 git clone https://github.com/usnistgov/trec_eval.git
 cd trec_eval
 make
