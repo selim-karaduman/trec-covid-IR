@@ -14,7 +14,6 @@ Trec Covid Info Retrieval
     * Re-ranking is implemented using sentence-transformers library
 
 ***
-***
 
 ### Requirements:
 * scipy >= 1.4.1
@@ -26,7 +25,6 @@ Trec Covid Info Retrieval
 * 
 * and the requirements for these packages
 
-***
 ***
 
 ### Setup:
@@ -48,7 +46,6 @@ popd
 ```
 
 ***
-***
 
 ### Fitting:
 ```bash
@@ -59,7 +56,6 @@ python evaluate.py --alg svd --operation calculate  --filename "./assets/svd"
 python evaluate.py --alg bert --operation calculate  --filename "./assets/bert" --bert-base-alg bm25
 ```
 
-***
 ***
 
 
@@ -72,7 +68,6 @@ python evaluate.py --alg tfidf --operation eval  --filename "./assets/tfidf"  --
 python evaluate.py --alg svd --operation eval  --filename "./assets/svd_1000"  --k -1
 ```
 
-***
 ***
 
 ### Results:
