@@ -36,10 +36,10 @@ class Base(ABC):
     def get_ranked_docs(self, *args, **kwargs):
         pass
 
-    def calculate_sim_matrix(self, matrix, q_v, k):
+    def calculate_sim_vector(self, matrix, q_v, k, tokenized_text):
         if k == -1:
-            sim_matrix = cosine_similarity(matrix, q_v)[:, 0]
-            return sim_matrix, None
+            sim_vector = cosine_similarity(matrix, q_v)[:, 0]
+            return sim_vector, None
 
         cand_doc_ids = np.array(list
                             (set.union(
@@ -48,24 +48,25 @@ class Base(ABC):
                             )
                         )
         sim_id2doc_id = {i:d_id for i, d_id in enumerate(cand_doc_ids)}
-        sim_matrix = cosine_similarity(matrix[cand_doc_ids,:], 
+        sim_vector = cosine_similarity(matrix[cand_doc_ids, :], 
                                         q_v)[:, 0]
-        return sim_matrix, sim_id2doc_id
+        return sim_vector, sim_id2doc_id
 
-    def get_sorted_docs(self, sim_matrix, sim_id2doc_id, k):
-        doc_ids = (-sim_matrix).argsort()
+    def get_sorted_docs(self, sim_vector, sim_id2doc_id, k):
+        # sim_vector is 1d np array
+        doc_ids = (-sim_vector).argsort()
         if k != -1:
             doc_ids = doc_ids[: k]
         ranked_docs = []
         if sim_id2doc_id is None:
             for doc_id in doc_ids:
                 doc_corduid = self.doc_ids[doc_id]
-                ranked_docs.append([sim_matrix[doc_id], doc_corduid])
+                ranked_docs.append([sim_vector[doc_id], doc_corduid])
             return ranked_docs
         else:
             for doc_id in doc_ids:
                 doc_corduid = self.doc_ids[sim_id2doc_id[doc_id]]
-                ranked_docs.append([sim_matrix[doc_id], doc_corduid])
+                ranked_docs.append([sim_vector[doc_id], doc_corduid])
             return ranked_docs
 
     def process_text(self, text):
@@ -135,8 +136,11 @@ class RandomBaseline:
             cord_uid = corpus["cord_uid"][i]
             self.docs_ids.append(cord_uid)
 
-    def get_ranked_docs(self, query):
-        docs = random.sample(self.docs_ids, 1000)
+    def get_ranked_docs(self, query, k=-1):
+        if k == -1:
+            docs = random.sample(self.docs_ids, len(self.doc_ids))
+        else:
+            docs = random.sample(self.docs_ids, k)
         return [(i, cord_uid) for i, cord_uid in enumerate(docs)]
 
 

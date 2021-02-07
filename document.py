@@ -36,4 +36,5 @@ class Document:
         for tok, count in self.tf_dict.items():
             if tok in word2id:
                 tf_vec[word2id[tok]] = count
+        tf_vec = scipy.sparse.csr_matrix(tf_vec)
         return tf_vec

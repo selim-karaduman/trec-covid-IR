@@ -54,10 +54,10 @@ class BertRanker(Base):
             base_score * (1-alpha) + bert_score * (alpha)
         """
         alpha = self.alpha
-        bert_sim_matrix, sim_id2doc_id = self.get_sim_matrix(query, k)
-        base_sim_matrix, _ = self.base.get_sim_matrix(query, k)
-        sim_matrix = alpha * bert_sim_matrix + (1 - alpha) * base_sim_matrix
-        return self.base.get_sorted_docs(sim_matrix, sim_id2doc_id, k)
+        bert_sim_vector, sim_id2doc_id = self.get_sim_vector(query, k)
+        base_sim_vector, _ = self.base.get_sim_vector(query, k)
+        sim_vector = alpha * bert_sim_vector + (1 - alpha) * base_sim_vector
+        return self.base.get_sorted_docs(sim_vector, sim_id2doc_id, k)
     
     def encode_query(self, query):
         if query in self.query_embeddings:
@@ -68,9 +68,10 @@ class BertRanker(Base):
         query_embedding = query_embedding.reshape(1, -1)
         return query_embedding
 
-    def get_sim_matrix(self, query, k):
+    def get_sim_vector(self, query, k):
         q_v = self.encode_query(query)
-        return self.base.calculate_sim_matrix(self.doc_embeddings, q_v, k)
+        tokenized_text = self.process_text(query)
+        return self.base.calculate_sim_vector(self.doc_embeddings, q_v, k, tokenized_text)
     
     def clean_string(self, text):
         return " ".join(super().process_text(text))

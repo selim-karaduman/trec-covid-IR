@@ -41,11 +41,11 @@ def load_topics(retrieve="all"):
         topics[t_id] = Topic(**kwargs)
     return topics
 
-def eval_topics(topics, trec_ir):
+def eval_topics(topics, trec_ir, k):
     evals = []
     for step, (_, t) in enumerate(topics.items()):
         q = " ".join([t.query, t.question, t.narrative])
-        eval_tuples = trec_ir.get_ranked_docs(q)
+        eval_tuples = trec_ir.get_ranked_docs(q, k=k)
         for i, (score, doc) in enumerate(eval_tuples):
             # eval_tuples is sorted already
             rank = i+1
@@ -64,10 +64,10 @@ def get_queries_from_topics(topics):
         queries.append(q)
     return queries
 
-def gen_runfile(trec_ir, fname):
+def gen_runfile(trec_ir, fname, k):
     topics = load_topics(retrieve="even")
     trec_ir.load(fname)
-    evals = eval_topics(topics, trec_ir)
+    evals = eval_topics(topics, trec_ir, k)
     output = ("\n".join(evals))
     with open("results/run.txt", "w") as f:
         f.write(output)
@@ -105,13 +105,14 @@ if __name__ == '__main__':
     parser.add_argument('--operation', choices=['eval', 'calculate'], 
                             required=True)
     parser.add_argument('--filename', required=True)
+    parser.add_argument('--k', default=-1, type=int)
     parser.add_argument('--bert-base-alg')
     args = parser.parse_args()
     
     if args.alg == "tfidf":
         trec_ir = TfIdfBaseline()
         if args.operation == "eval":
-            gen_runfile(trec_ir, args.filename)
+            gen_runfile(trec_ir, args.filename, args.k)
             get_relevant_scores()
         elif args.operation == "calculate":
             import pandas as pd
@@ -120,7 +121,7 @@ if __name__ == '__main__':
     elif args.alg == "svd":
         trec_ir = SvdBaseline("assets/sublinear_tfidf")
         if args.operation == "eval":
-            gen_runfile(trec_ir, args.filename)
+            gen_runfile(trec_ir, args.filename, args.k)
             get_relevant_scores()
         elif args.operation == "calculate":
             trec_ir.extract_stats_to_file(args.filename)
@@ -136,7 +137,7 @@ if __name__ == '__main__':
             raise ValueError
         trec_ir = BertRanker(base)
         if args.operation == "eval":
-            gen_runfile(trec_ir, args.filename)
+            gen_runfile(trec_ir, args.filename, args.k)
             get_relevant_scores()
         elif args.operation == "calculate":
             import pandas as pd
@@ -147,7 +148,7 @@ if __name__ == '__main__':
     elif args.alg == "bm25":
         trec_ir = BM25Baseline(b=0.75, k=1.5)
         if args.operation == "eval":
-            gen_runfile(trec_ir, args.filename)
+            gen_runfile(trec_ir, args.filename, args.k)
             get_relevant_scores()
         elif args.operation == "calculate":
             import pandas as pd

@@ -40,20 +40,20 @@ class SvdBaseline(TfIdfBaseline):
         self.svd, self.doc_mat = load(fname)
 
     def get_ranked_docs(self, query, k=-1):
-        sim_matrix, sim_id2doc_id = self.get_sim_matrix(query, k)
+        sim_matrix, sim_id2doc_id = self.get_sim_vector(query, k)
         return self.get_sorted_docs(sim_matrix, sim_id2doc_id, k)
 
-    def encode_query(self, query):
-        tokenized_text = self.process_text(query)
+    def encode_query(self, tokenized_text):
         query_doc = Document(tokenized_text)
         query_doc.cache_tf_vector(self.word2id)
         q_tf_idf = query_doc.tf_vec * self.idf
         q_v = self.svd.transform(q_tf_idf)
         return q_v
 
-    def get_sim_matrix(self, query, k):
-        q_v = self.encode_query(query)
-        return super().calculate_sim_matrix(self.doc_mat, q_v, k)
+    def get_sim_vector(self, query, k):
+        tokenized_text = self.process_text(query)
+        q_v = self.encode_query(tokenized_text)
+        return super().calculate_sim_vector(self.doc_mat, q_v, k, tokenized_text)
 
     def fit(self, n_iter, n):
         self.svd = TruncatedSVD(n_components=1000, random_state=0, n_iter=50)
@@ -61,7 +61,3 @@ class SvdBaseline(TfIdfBaseline):
         self.svd.fit(self.tf_idf)
         self.doc_mat = self.svd.transform(self.tf_idf)
 
-
-"""
-JOBLIB_TEMP_FOLDER=/tmp python evaluate.py --alg svd --operation calculate  --filename "./assets/svd_100_1" ; JOBLIB_TEMP_FOLDER=/tmp python evaluate.py --alg svd --operation eval  --filename "./assets/svd_100_1" ; bash eval.sh "run.txt"
-"""
