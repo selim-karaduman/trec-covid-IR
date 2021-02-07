@@ -22,7 +22,6 @@ Trec Covid Info Retrieval
 * sentence-transformers >= 0.4.1.2 
 * nltk >= 3.5
 * joblib >= 0.13.2
-* 
 * and the requirements for these packages
 
 ***
