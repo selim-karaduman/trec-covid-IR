@@ -81,3 +81,4 @@ python evaluate.py --alg svd --operation eval  --filename "./assets/svd_1000"  -
 
 
 * The results are obtained for k==-1; which means: for each query program returns all documents sorted by their score. *Unlike* trec_covid requirement ok k==1000.
+* Also, results are obtained using only the even numbered topics
