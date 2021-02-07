@@ -35,9 +35,11 @@ tar -xvf cord-19_2020-07-16.tar.gz
 mv "2020-07-16/metadata.csv" .
 rm -rf cord-19_2020-07-16.tar.gz 2020-07-16/
 
-# install trec_eval
 pushd .
 cd ..
+# install relevance scores
+wget "https://ir.nist.gov/covidSubmit/data/qrels-covid_d5_j0.5-5.txt"
+# install trec_eval
 git clone https://github.com/usnistgov/trec_eval.git
 cd trec_eval
 make
