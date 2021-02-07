@@ -1,7 +1,8 @@
 from sentence_transformers import SentenceTransformer
 from base import *
 from joblib import dump, load
-
+import os.path
+from os import path
 """
 This assumes a baseline has been trained:
     if not train tf-idf model e.g. for tf-idf or any other baseline:
@@ -26,7 +27,13 @@ class BertRanker(Base):
     def __init__(self, base, alpha=0.21):
         super().__init__()
         self.base = base
-        self.model = SentenceTransformer("./models/covidbert-nli")
+        if (path.exists("./models/covidbert-nli") and 
+            path.isdir("./models/covidbert-nli")):
+            self.model = SentenceTransformer("./models/covidbert-nli")
+        else:
+            print("Installing bert model...")
+            self.model = SentenceTransformer("gsarti/covidbert-nli")
+            self.model.save("./models/covidbert-nli")
         self.alpha = alpha
 
     def extract_stats_to_file(self, corpus, queries, fname):
