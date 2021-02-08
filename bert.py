@@ -39,7 +39,7 @@ class BertRanker(Base):
     def extract_stats_to_file(self, corpus, queries, fname):
         self.process_queries(queries, False)
         self.process_corpus(corpus, False)
-        self.save(fname + "notclean")
+        self.save(fname)
 
     def save(self, fname):
         # query_embeddings: is a dictionary: 
