@@ -17,7 +17,7 @@ l.extract_stats_to_file(fname)
 To load existing statistics:
     l = BertRanker(b)
     l.load(fname)
-    l.get_ranked_documents(query, alpha)
+    l.get_ranked_documents(query)
 
 Uses functions of base argument, 
     since the relevant things are not stored in Base
@@ -40,9 +40,6 @@ class BertRanker(Base):
         self.process_queries(queries, False)
         self.process_corpus(corpus, False)
         self.save(fname + "notclean")
-        self.process_queries(queries, True)
-        self.process_corpus(corpus, True)
-        self.save(fname + "clean")
 
     def save(self, fname):
         # query_embeddings: is a dictionary: 
