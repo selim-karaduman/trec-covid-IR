@@ -1,4 +1,5 @@
-from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoModel
+from sentence_transformers import models, SentenceTransformer
 from base import *
 from joblib import dump, load
 import os.path
@@ -27,13 +28,46 @@ class BertRanker(Base):
     def __init__(self, base, alpha=0.21):
         super().__init__()
         self.base = base
-        if (path.exists("./models/covidbert-nli") and 
-            path.isdir("./models/covidbert-nli")):
-            self.model = SentenceTransformer("./models/covidbert-nli")
+        model_path = "models/covidbert-nli"
+        # for downloading/loading the model check: 
+        #    https://github.com/gsarti/covid-papers-browser
+        #        /blob/master/scripts/download_model.py    
+        if (path.exists(model_path) and 
+                path.isdir(model_path)):
+            word_embedding_model = models.BERT(model_path, 
+                                                max_seq_length=128,
+                                                do_lower_case=True)
+            pooling_model = models.Pooling(
+                                word_embedding_model\
+                                    .get_word_embedding_dimension(),
+                                pooling_mode_mean_tokens=True,
+                                pooling_mode_cls_token=False,
+                                pooling_mode_max_tokens=False
+                                )
+            model = SentenceTransformer(
+                modules=[word_embedding_model, pooling_model])
+            self.model = model
         else:
             print("Installing bert model...")
-            self.model = SentenceTransformer("gsarti/covidbert-nli")
-            self.model.save("./models/covidbert-nli")
+            tokenizer = AutoTokenizer.from_pretrained("gsarti/covidbert-nli")
+            model = AutoModel.from_pretrained("gsarti/covidbert-nli")
+            model.save_pretrained(model_path)
+            tokenizer.save_pretrained(model_path)
+            # Build the SentenceTransformer directly
+            word_embedding_model = models.BERT(model_path,
+                                                max_seq_length=128,
+                                                do_lower_case=True)
+            pooling_model = models.Pooling(
+                                word_embedding_model\
+                                    .get_word_embedding_dimension(),
+                                pooling_mode_mean_tokens=True,
+                                pooling_mode_cls_token=False,
+                                pooling_mode_max_tokens=False
+                                )
+            model = SentenceTransformer(
+                modules=[word_embedding_model, pooling_model])
+            self.model = model
+            print("Bert model is installed")
         self.alpha = alpha
 
     def extract_stats_to_file(self, corpus, queries, fname):

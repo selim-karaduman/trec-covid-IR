@@ -64,7 +64,7 @@ def get_queries_from_topics(topics):
         queries.append(q)
     return queries
 
-def gen_runfile(trec_ir, fname, k, retrieve="even"):
+def gen_runfile(trec_ir, fname, k, retrieve="all"):
     topics = load_topics(retrieve=retrieve)
     trec_ir.load(fname)
     evals = eval_topics(topics, trec_ir, k)
@@ -92,8 +92,14 @@ def get_relevant_scores():
     p10 = res["P_10"]
     ndcg = res["ndcg"]
     success_10 = res["success_10"]
-    print("MAP: {}\nP_10: {}\nNDCG: {}\nsuccess_10: {}"\
-            .format(map_score, p10, ndcg, success_10))
+    success_10 = res["success_10"]
+    ndcg_cut_20 = res["ndcg_cut_20"]
+    P_20 = res["P_20"]
+    bpref = res["bpref"]
+    print("MAP: {}\nP_10: {}\nNDCG: {}\n"\
+            "success_10: {}\nndcg_cut_20: {}\nP_20: {}\nbpref: {}"\
+            .format(map_score, p10, ndcg, 
+                        success_10, ndcg_cut_20, P_20, bpref))
     return (map_score, p10, ndcg, success_10)
 
 if __name__ == '__main__':

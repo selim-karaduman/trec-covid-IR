@@ -29,7 +29,7 @@ class SvdBaseline(TfIdfBaseline):
         super().__init__()
         super().load(fname_base)
 
-    def extract_stats_to_file(self, fname, n_iter=200, n=100):
+    def extract_stats_to_file(self, fname, n_iter=20, n=100):
         self.fit(n_iter, n)
         self.save(fname)
 
@@ -57,8 +57,9 @@ class SvdBaseline(TfIdfBaseline):
                                                 q_v, k, tokenized_text)
 
     def fit(self, n_iter, n):
-        self.svd = TruncatedSVD(n_components=1000, random_state=0, n_iter=50)
-        print("Fitting lda...")
+        self.svd = TruncatedSVD(n_components=100, 
+                                random_state=0, n_iter=n_iter)
+        print("SVD: fitting...")
         self.svd.fit(self.tf_idf)
         self.doc_mat = self.svd.transform(self.tf_idf)
 

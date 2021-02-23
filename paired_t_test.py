@@ -9,8 +9,8 @@ from scipy import stats
 
 def paired_test(trec_ir1, file1, retr1, name1, trec_ir2, file2, retr2, name2):
     gen_runfile(trec_ir1, file1, -1, retr1)
-    a = subprocess.run(["../trec_eval/trec_eval",
-                            "-q", "../qrels-covid_d5_j0.5-5.txt", 
+    a = subprocess.run(["./trec_eval/trec_eval",
+                            "-q", "./qrels-covid_d5_j0.5-5.txt", 
                             "results/run.txt", "-m", "all_trec"
                             ], stdout=subprocess.PIPE)
     data = a.stdout.decode("utf-8").replace(" ", "")
@@ -30,8 +30,8 @@ def paired_test(trec_ir1, file1, retr1, name1, trec_ir2, file2, retr2, name2):
         maps1.append(res1[k])
 
     gen_runfile(trec_ir2, file2, -1, retr2)
-    a = subprocess.run(["../trec_eval/trec_eval",
-                            "-q", "../qrels-covid_d5_j0.5-5.txt", 
+    a = subprocess.run(["./trec_eval/trec_eval",
+                            "-q", "./qrels-covid_d5_j0.5-5.txt", 
                             "results/run.txt", "-m", "all_trec"
                             ], stdout=subprocess.PIPE)
     data = a.stdout.decode("utf-8").replace(" ", "")

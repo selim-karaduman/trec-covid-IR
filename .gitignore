@@ -6,6 +6,7 @@ __pycache__/
 assets/*
 results/*
 models/*
+trec_eval/*
 
 # C extensions
 *.so
